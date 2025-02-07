@@ -1,0 +1,120 @@
+name: Deploy Microservices from Docker Hub
+
+on:
+  push:
+    branches:
+      - Dev
+      - QA
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      # Paso 1: Checkout del código fuente
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      # Paso 2: Login a Docker Hub
+      - name: Login to Docker Hub
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+      # Paso 3: Construir y subir las imágenes Docker para cada microservicio
+      - name: Build and Push Docker Images
+        run: |
+          branch_name=$(echo "${{ github.ref_name }}")
+          for dir in $(ls -d */); do
+            service_name=$(basename "$dir")
+            echo "Building Docker image for $service_name..."
+            docker build -t dssanguano/${service_name}:${branch_name} "$dir"
+            docker push dssanguano/${service_name}:${branch_name}
+          done
+
+  deploy-dev:
+    if: github.ref_name == 'Dev'
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      # Paso 1: Configurar SSH Key para Dev
+      - name: Set up SSH key for Dev
+        run: |
+          mkdir -p /home/runner/.ssh
+          echo "${{ secrets.DEV_SSH_KEY }}" > /home/runner/.ssh/main_key.pem
+          chmod 600 /home/runner/.ssh/main_key.pem
+
+      # Paso 2: Desplegar todos los microservicios usando el archivo docker-compose.yml
+      - name: Deploy to Dev Instance
+        run: |
+          ssh -o StrictHostKeyChecking=no -i /home/runner/.ssh/main_key.pem ubuntu@${{ secrets.HOST }} << EOF
+          # Verificar e instalar Docker si no está instalado
+          if ! command -v docker &> /dev/null; then
+            echo "Docker no está instalado. Procediendo a instalar..."
+            sudo apt update
+            sudo apt install -y docker.io
+            sudo systemctl start docker
+            sudo systemctl enable docker
+            sudo usermod -aG docker ubuntu
+            echo "Docker instalado exitosamente."
+          else
+            echo "Docker ya está instalado."
+          fi
+
+          # Verificar e instalar Docker Compose si no está instalado
+          if ! command -v docker-compose &> /dev/null; then
+            echo "Docker Compose no está instalado. Procediendo a instalar..."
+            sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            echo "Docker Compose instalado exitosamente."
+          else
+            echo "Docker Compose ya está instalado."
+          fi
+
+          # Verificar e instalar Docker Compose si no está instalado
+          if ! command -v docker-compose &> /dev/null; then
+            echo "Docker Compose no está instalado. Procediendo a instalar..."
+            sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            echo "Docker Compose instalado exitosamente."
+          else
+            echo "Docker Compose ya está instalado."
+          fi
+
+          # Exportar variables de entorno para docker-compose
+          export branch_name="${{ github.ref_name}}"
+          export DYNAMODB_TABLE="${{ secrets.DYNAMODB_TABLE }}"
+          export AWS_REGION="${{ secrets.AWS_REGION }}"
+          export AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}"
+          export AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          export AWS_SESSION_TOKEN="${{ secrets.AWS_SESSION_TOKEN }}"
+          export S3_BUCKET="${{ secrets.S3_BUCKET }}"
+          export host="${{ secrets.HOST }}"
+
+          # Crear archivo docker-compose.yml estático
+          cat <<EOL > docker-compose.yml
+          version: '3'
+          services:
+            ms-exams:
+              image: dssanguano/ms-exams:\${branch_name}
+              ports:
+                - "8000:8000"
+              environment:
+                - DYNAMODB_TABLE=\${DYNAMODB_TABLE}
+                - AWS_REGION=\${AWS_REGION}
+                - AWS_ACCESS_KEY_ID=\${AWS_ACCESS_KEY_ID}
+                - AWS_SECRET_ACCESS_KEY=\${AWS_SECRET_ACCESS_KEY}
+                - AWS_SESSION_TOKEN=\${AWS_SESSION_TOKEN}
+                - S3_BUCKET=\${S3_BUCKET}
+          EOL
+
+          # Imprimir el contenido del archivo docker-compose.yml para depuración
+          echo "Generated docker-compose.yml:"
+          cat docker-compose.yml
+
+          # Validar el archivo docker-compose.yml
+          docker-compose config || true
+
+          # Desplegar con Docker Compose
+          sudo docker-compose down || true
+          sudo docker-compose pull
+          sudo docker-compose up -d
+          EOF
