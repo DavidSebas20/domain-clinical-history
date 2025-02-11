@@ -87,7 +87,8 @@ jobs:
           export AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}"
           export AWS_SESSION_TOKEN="${{ secrets.AWS_SESSION_TOKEN }}"
           export S3_BUCKET="${{ secrets.S3_BUCKET }}"
-          export host="${{ secrets.HOST }}"
+          export PORT_PRESCRIPTIONS="${{ secrets.PORT_PRESCRIPTIONS }}"
+          export MONGO_URI="${{ secrets.MONGO_URI }}"
 
           # Crear archivo docker-compose.yml estático
           cat <<EOL > docker-compose.yml
@@ -104,6 +105,13 @@ jobs:
                 - AWS_SECRET_ACCESS_KEY=\${AWS_SECRET_ACCESS_KEY}
                 - AWS_SESSION_TOKEN=\${AWS_SESSION_TOKEN}
                 - S3_BUCKET=\${S3_BUCKET}
+            ms-prescriptions:
+              image: dssanguano/ms-prescriptions:\${branch_name}
+              ports:
+                - "8001:8001"
+              environment:
+                - MONGO_URI=\${MONGO_URI}
+                - PORT=\${PORT_PRESCRIPTIONS}
           EOL
 
           # Imprimir el contenido del archivo docker-compose.yml para depuración
