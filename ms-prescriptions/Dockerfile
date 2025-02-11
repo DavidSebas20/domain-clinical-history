@@ -19,8 +19,5 @@ FROM node:20-alpine
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy only the necessary files from the builder stage
-COPY --from=builder /app /app
-
 # Command to run the application
-CMD ["npm", "start"]
+CMD ["npm", "run",'dev']
