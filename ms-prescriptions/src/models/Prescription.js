@@ -1,10 +1,15 @@
 const mongoose = require('mongoose');
+const { v4: uuidv4 } = require('uuid'); 
 
-// Define the Prescription schema with patient_id and doctor_id
+// Define the Prescription schema
 const prescriptionSchema = new mongoose.Schema({
-  prescription_id: { type: String, required: true, unique: true },
-  patient_id: { type: String, required: true }, 
-  doctor_id: { type: String, required: true },  
+  prescription_id: {
+    type: String,
+    default: () => uuidv4(),
+    unique: true,
+  },
+  patient_id: { type: String, required: true },
+  doctor_id: { type: String, required: true },
   medication: { type: String, required: true },
   dosage: { type: String, required: true },
   date_prescribed: { type: Date, default: Date.now },

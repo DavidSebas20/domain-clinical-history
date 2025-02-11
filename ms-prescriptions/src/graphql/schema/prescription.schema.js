@@ -1,6 +1,5 @@
-const gql = require('graphql-tag');
+const { gql } = require('graphql-tag');
 
-// Define the GraphQL schema for prescriptions
 module.exports = gql`
   type Prescription {
     prescription_id: String!
@@ -20,7 +19,6 @@ module.exports = gql`
 
   type Mutation {
     addPrescription(
-      prescription_id: String!
       patient_id: String!
       doctor_id: String!
       medication: String!
