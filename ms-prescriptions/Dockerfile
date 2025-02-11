@@ -7,8 +7,8 @@ WORKDIR /app
 # Copy package.json and package-lock.json (if exists)
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install --production
+# Install dependencies (including development dependencies for development purposes)
+RUN npm install
 
 # Copy the rest of the application code
 COPY . .
@@ -19,5 +19,8 @@ FROM node:20-alpine
 # Set the working directory inside the container
 WORKDIR /app
 
+# Install only production dependencies (to reduce image size)
+COPY --from=builder /app /app
+
 # Command to run the application
-CMD ["npm", "run",'dev']
+CMD ["npm", "run", "dev"]
