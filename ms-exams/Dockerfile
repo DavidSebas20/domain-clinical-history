@@ -1,16 +1,26 @@
-FROM python:3.10-slim
+# Stage 1: Build the application
+FROM node:20-alpine AS builder
 
-
+# Set the working directory inside the container
 WORKDIR /app
 
+# Copy package.json and package-lock.json (if exists)
+COPY package*.json ./
 
-COPY requirements.txt .
+# Install dependencies
+RUN npm install --production
 
-
-RUN pip install --no-cache-dir -r requirements.txt
-
-
+# Copy the rest of the application code
 COPY . .
 
+# Stage 2: Run the application
+FROM node:20-alpine
 
-CMD ["fastapi", "run", "main.py", "--port", "8000"]
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy only the necessary files from the builder stage
+COPY --from=builder /app /app
+
+# Command to run the application
+CMD ["npm", "start"]

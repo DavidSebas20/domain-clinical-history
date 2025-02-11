@@ -1,4 +1,4 @@
-name: Sync ms-exams to Domain Repository
+name: Sync to Domain Repository
 on:
   push:
     branches:
