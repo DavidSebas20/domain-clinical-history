@@ -7,21 +7,22 @@ from uuid import uuid4
 
 router = APIRouter()
 
-@router.post("/record/")
+@router.post("/")
 def add_clinical_record(record: ClinicalRecord):
     try:
-        # Generate a record_id
+        # Generar un record_id único
         record_id = str(uuid4())
 
-        # Create a new record in the database
+        # Crear el registro con el record_id generado
         record_dict = record.dict()
-        record_dict["record_id"] = record_id
-        record_dict["date"] = record.date.isoformat()  
+        record_dict["record_id"] = record_id  # Agregar el record_id generado
+        record_dict["date"] = record.date.isoformat()  # Convertir fecha a string
         table.put_item(Item=record_dict)
 
         return {"message": "Clinical record added successfully", "record_id": record_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/{patient_id}", response_model=ClinicalHistoryResponse)
 def get_clinical_records_by_patient(patient_id: str):
