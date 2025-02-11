@@ -1,3 +1,4 @@
+from decimal import Decimal
 from fastapi import APIRouter, HTTPException
 from app.database import table
 from app.models import ClinicalRecord
@@ -13,10 +14,14 @@ def add_clinical_record(record: ClinicalRecord):
         # Generar un record_id único
         record_id = str(uuid4())
 
-        # Crear el registro con el record_id generado
+        # Convertir valores flotantes a Decimal
         record_dict = record.dict()
-        record_dict["record_id"] = record_id  # Agregar el record_id generado
+        record_dict["record_id"] = record_id
         record_dict["date"] = record.date.isoformat()  # Convertir fecha a string
+        record_dict["height"] = Decimal(str(record.height))  # Convertir height a Decimal
+        record_dict["weight"] = Decimal(str(record.weight))  # Convertir weight a Decimal
+
+        # Guardar el registro en DynamoDB
         table.put_item(Item=record_dict)
 
         return {"message": "Clinical record added successfully", "record_id": record_id}
