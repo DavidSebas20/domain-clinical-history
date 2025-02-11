@@ -89,6 +89,7 @@ jobs:
           export S3_BUCKET="${{ secrets.S3_BUCKET }}"
           export PORT_PRESCRIPTIONS="${{ secrets.PORT_PRESCRIPTIONS }}"
           export MONGO_URI="${{ secrets.MONGO_URI }}"
+          export DYNAMODB_TABLE_RECORDS="${{ secrets.DYNAMODB_TABLE_RECORDS }}"
 
           # Crear archivo docker-compose.yml estático
           cat <<EOL > docker-compose.yml
@@ -112,6 +113,16 @@ jobs:
               environment:
                 - MONGO_URI=\${MONGO_URI}
                 - PORT=\${PORT_PRESCRIPTIONS}
+            ms-medical-record:
+              image: dssanguano/ms-medical-record:\${branch_name}
+              ports:
+                - "8002:8002"
+              environment:
+                - DYNAMODB_TABLE_RECORDS=\${DYNAMODB_TABLE_RECORDS}
+                - AWS_REGION=\${AWS_REGION}
+                - AWS_ACCESS_KEY_ID=\${AWS_ACCESS_KEY_ID}
+                - AWS_SECRET_ACCESS_KEY=\${AWS_SECRET_ACCESS_KEY}
+                - AWS_SESSION_TOKEN=\${AWS_SESSION_TOKEN}
           EOL
 
           # Imprimir el contenido del archivo docker-compose.yml para depuración
