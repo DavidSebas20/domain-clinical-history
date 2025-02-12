@@ -32,6 +32,11 @@ const startServer = async () => {
     expressMiddleware(server)
   );
 
+  // ✅ Add a health check endpoint
+  app.get('/healthz', (req, res) => {
+    res.status(200).send('OK');
+  });
+
   // Start the Express server
   const PORT = process.env.PORT || 8001;
   app.listen(PORT, () => {
